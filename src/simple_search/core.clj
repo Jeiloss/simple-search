@@ -11,8 +11,7 @@
 ;;;   * :total-weight - the weight of the chosen items
 ;;;   * :total-value - the value of the chosen items
 
-(defrecord Answer
-  [instance choices total-weight total-value])
+(defrecord Answer [instance choices total-weight total-value])
 
 (defn included-items
   "Takes a sequences of items and a sequence of choices and
@@ -23,6 +22,7 @@
        (filter #(= 1 (second %))
                (map vector items choices))))
 
+
 (defn make-answer
   [instance choices]
   (let [included (included-items (:items instance) choices)]
@@ -31,7 +31,7 @@
               (reduce + (map :value included)))))
 
 (defn random-answer
-  "Construct a random answer for the given instance of the
+  "Construct a random answer valuefor the given instance of the
   knapsack problem."
   [instance]
   (let [choices (repeatedly (count (:items instance))
@@ -44,7 +44,7 @@
 ;;; generates weighted proportions of 0's and 1's.
 
 (defn score
-  "Takes the total-weight of the given answer unless it's over capacity,
+  "Takes the :total-weight of the given answer unless it's over capacity,
    in which case we return 0."
   [answer]
   (if (> (:total-weight answer)
@@ -92,7 +92,7 @@
   [scorer instance max-tries]
   (apply max-key :score
          (map (partial add-score scorer)
-              (repeatedly max-tries #(random-answer instance)))))
+               (repeatedly max-tries #(random-answer instance)))))
 
 ; (random-search penalized-score knapPI_16_200_1000_1 10000)
 
@@ -129,3 +129,48 @@
 
 ; (time (hill-climber mutate-answer penalized-score knapPI_16_200_1000_1 100000
 ; ))
+
+(defn value-to-weight
+  [answer]
+    (let [item (first :items)
+          w (:weight item)
+          v (:value item)]
+      (/ v w)))
+
+;; (defn list-value-to-weight
+;;   [answer]
+;;    (map value-to-weight
+
+
+
+
+(defn mean [coll]
+  (let [sum (apply + coll)
+        count (count coll)]
+    (if (pos? count)
+      (/ sum count)
+      0)))
+
+;; (mean [1 4 3])
+
+(defn standard-deviation [coll]
+  (let [avg (mean coll)
+        squares (for [x coll]
+                  (let [x-avg (- x avg)]
+                    (* x-avg x-avg)))
+        total (count coll)]
+    (-> (/ (apply + squares)
+           (- total 1))
+        (Math/sqrt))))
+
+;; (standard-deviation [4 5 2 9 5 7 4 5 4])
+
+
+
+
+(println
+  (random-search penalized-score knapPI_16_200_1000_1 10000))
+
+
+
+;; (value-to-weight 10 5)

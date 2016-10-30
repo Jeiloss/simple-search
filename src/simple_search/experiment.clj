@@ -48,55 +48,35 @@
   (let [problem (var-get (resolve (symbol problem-name)))]
     (assoc problem :label problem-name)))
 
-
 (defn -main
+  "Runs a set of experiments with the number of repetitions and maximum
+  answers (tries) specified on the command line.
+  To run this use something like:
+  lein run -m simple-search.experiment 30 1000
+  where you replace 30 and 1000 with the desired number of repetitions
+  and maximum answers.
+  "
   [num-repetitions max-answers]
+  ; This is necessary to "move" us into this namespace. Otherwise we'll
+  ; be in the "user" namespace, and the references to the problems won't
+  ; resolve propertly.
   (ns simple-search.experiment)
   (print-experimental-results
-    (run-experiment [(with-meta
-                       (partial core/hill-climber core/mutate-answer core/score)
-                       {:label "hill_climber_cliff_score"})]
-                    ;;Insert search algorithm to the above bracket.
-                    (map get-labelled-problem
-                         ["knapPI_16_200_1000_4"]
-                         )
-                    ;;add things to the above bracket to run on multiple problem-sets.
-                    (Integer/parseInt num-repetitions)
-                    (Integer/parseInt max-answers)))
+   (run-experiment [(with-meta
+                      (partial core/hill-climber core/mutate-answer core/score)
+                      {:label "hill_climber_cliff_score"})
+                    (with-meta
+                      (partial core/hill-climber core/mutate-answer core/penalized-score)
+                      {:label "hill_climber_penalized_score"})
+                    (with-meta
+                      (partial core/random-search core/score)
+                      {:label "random_search"})
+                    (with-meta
+                      (partial core/hill-climber core/mutate-answer core/score)
+                      {:label "hill_climber_cliff_score"})]
+                   (map get-labelled-problem
+                        ["knapPI_11_20_1000_4" "knapPI_13_20_1000_4" "knapPI_16_20_1000_4"
+                         "knapPI_11_200_1000_4" "knapPI_13_200_1000_4" "knapPI_16_200_1000_4"])
+                   (Integer/parseInt num-repetitions)
+                   (Integer/parseInt max-answers)))
   (shutdown-agents))
-
-(-main "1" "1")
-
-;; (defn -main
-;;   "Runs a set of experiments with the number of repetitions and maximum
-;;   answers (tries) specified on the command line.
-
-;;   To run this use something like:
-
-;;   lein run -m simple-search.experiment 30 1000
-
-;;   where you replace 30 and 1000 with the desired number of repetitions
-;;   and maximum answers.
-;;   "
-;;   [num-repetitions max-answers]
-;;   ; This is necessary to "move" us into this namespace. Otherwise we'll
-;;   ; be in the "user" namespace, and the references to the problems won't
-;;   ; resolve propertly.
-;;   (ns simple-search.experiment)
-;;   (print-experimental-results
-;;    (run-experiment [(with-meta
-;;                       (partial core/hill-climber core/mutate-answer core/score)
-;;                       {:label "hill_climber_cliff_score"})
-;;                     (with-meta
-;;                       (partial core/hill-climber core/mutate-answer core/penalized-score)
-;;                       {:label "hill_climber_penalized_score"})
-;;                     (with-meta (partial core/random-search core/score)
-;;                       {:label "random_search"})]
-;;                   ;;Insert search algorithm to the above bracket.
-;;                    (map get-labelled-problem
-;;                         ["knapPI_16_200_1000_4"]
-;;                         ;;add things to the above bracket to run on multiple problem-sets.
-;;                         )
-;;                    (Integer/parseInt num-repetitions)
-;;                    (Integer/parseInt max-answers)))
-;;   (shutdown-agents))
