@@ -22,7 +22,6 @@
        (filter #(= 1 (second %))
                (map vector items choices))))
 
-
 (defn make-answer
   [instance choices]
   (let [included (included-items (:items instance) choices)]
@@ -80,7 +79,7 @@
                    (+ weight w)
                    (rest items))))))))
 
-; (lexi-score (random-answer knapPI_16_200_1000_1))
+;(lexi-score (random-answer knapPI_16_200_1000_1))
 
 (defn add-score
   "Computes the score of an answer and inserts a new :score field
@@ -130,6 +129,7 @@
 ; (time (hill-climber mutate-answer penalized-score knapPI_16_200_1000_1 100000
 ; ))
 
+;;;;;;MATT START
 (defn value-to-weight
   [answer]
     (let [item (first :items)
@@ -167,10 +167,46 @@
 
 
 
-
-(println
-  (random-search penalized-score knapPI_16_200_1000_1 10000))
-
+;instance = capacity items
 
 
 ;; (value-to-weight 10 5)
+;;;;;;END MATT
+
+;;;;;;TRAVIS START
+
+
+(:value (first (:items knapPI_16_200_1000_1)))
+(first knapPI_16_200_1000_1)
+
+;; (def enlist `(3))
+;; (cons 5 enlist)
+
+(def make-list (fn [instance]
+                 (loop [remaining (count (:items instance))
+                        lists (:items instance)
+                        enlist nil]
+                   (if (= remaining 0)
+                     enlist
+                     (recur (dec remaining)
+                            (rest lists)
+                            (cons (float (/ (:value (first lists)) (:weight (first lists)))) enlist))))))
+
+(mean (make-list knapPI_16_200_1000_1))
+(standard-deviation (make-list knapPI_16_200_1000_1))
+
+;; (def find-value (fn [thing]
+;;                   (/ (:value thing) (:weight thing))))
+
+(def avg-price (fn [instance]
+                 (loop [total 0
+                        remaining (count (:items instance))
+                        lists (:items instance)]
+                   (if (= remaining 0)
+                     (/ total (count (:items instance)))
+                     (recur (+ total (:value (first lists)))
+                            (dec remaining)
+                            (rest lists))))))
+
+(avg-price knapPI_16_200_1000_1)
+;;;;;;END TRAVIS
