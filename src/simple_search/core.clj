@@ -30,14 +30,14 @@
               (reduce + (map :value included)))))
 
 (defn random-answer
-  "Construct a random answer valuefor the given instance of the
+  "Construct a random answer value for the given instance of the
   knapsack problem."
   [instance]
   (let [choices (repeatedly (count (:items instance))
                             #(rand-int 2))]
     (make-answer instance choices)))
 
-; (random-answer knapPI_13_20_1000_7)
+;; (random-answer knapPI_13_20_1000_7)
 
 ;;; It might be cool to write a function that
 ;;; generates weighted proportions of 0's and 1's.
@@ -75,7 +75,7 @@
               v (:value item)]
           (if (> (+ weight w) capacity)
             (recur value weight (rest items))
-            (recur (+ value v)
+            (recur (+ value v)nswer
                    (+ weight w)
                    (rest items))))))))
 
@@ -129,19 +129,13 @@
 ; (time (hill-climber mutate-answer penalized-score knapPI_16_200_1000_1 100000
 ; ))
 
+
 ;;;;;;MATT START
-(defn value-to-weight
-  [answer]
-    (let [item (first :items)
-          w (:weight item)
-          v (:value item)]
-      (/ v w)))
-
-;; (defn list-value-to-weight
 ;;   [answer]
-;;    (map value-to-weight
-
-
+;;     (let [item (first :items)
+;;           w (:weight item)
+;;           v (:value item)]
+;;       (/ v w)))
 
 
 (defn mean [coll]
@@ -165,12 +159,6 @@
 
 ;; (standard-deviation [4 5 2 9 5 7 4 5 4])
 
-
-
-;instance = capacity items
-
-
-;; (value-to-weight 10 5)
 ;;;;;;END MATT
 
 ;;;;;;TRAVIS START
