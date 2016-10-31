@@ -13,6 +13,67 @@
 
 (defrecord Answer [instance choices total-weight total-value])
 
+(defn mean [coll]
+  (let [sum (apply + coll)
+        count (count coll)]
+    (if (pos? count)
+      (/ sum count)
+      0)))
+
+;; (mean [1 4 3])
+
+(defn standard-deviation [coll]
+  (if (empty? coll)
+    '()
+  (let [avg (mean coll)
+        squares (for [x coll]
+                  (let [x-avg (- x avg)]
+                    (* x-avg x-avg)))
+        total (count coll)]
+    (-> (/ (apply + squares)
+           (- total 1))
+        (Math/sqrt)))))
+
+;; (standard-deviation [4 5 2 9 5 7 4 5 4])
+
+
+(:value (first (:items knapPI_16_200_1000_1)))
+(first knapPI_16_200_1000_1)
+
+;; (def enlist `(3))
+;; (cons 5 enlist)
+
+(def make-list (fn [instance]
+                 (if (empty? instance)
+                   '()
+                 (loop [remaining (count (:items instance))
+                        lists (:items instance)
+                        enlist nil]
+                   (if (= remaining 0)
+                     enlist
+                     (recur (dec remaining)
+                            (rest lists)
+                            (cons (float (/ (:value (first lists)) (:weight (first lists)))) enlist)))))))
+
+
+;;  make-list works on this instance, but when called upon at the top level,
+;;  it throws an error
+(mean (make-list knapPI_16_200_1000_1))
+(standard-deviation (make-list knapPI_16_200_1000_1))
+
+(def avg-price (fn [instance]
+                 (loop [total 0
+                        remaining (count (:items instance))
+                        lists (:items instance)]
+                   (if (= remaining 0)
+                     (/ total (count (:items instance)))
+                     (recur (+ total (:value (first lists)))
+                            (dec remaining)
+                            (rest lists))))))
+
+(avg-price knapPI_16_200_1000_1)
+
+
 (defn included-items
   "Takes a sequences of items and a sequence of choices and
   returns the subsequence of items corresponding to the 1's
@@ -102,23 +163,22 @@
 
 
 
-
 ;;we want to prefer things that are CLOSER to the mean. Bollocks to the outliers!!!
+;; The new mutate-choices takes 2 parameter in order to check the z-score and flip a choice.
+
 (defn mutate-choices
   ;;This needs to include more data!
   [choices instance]
-  (println (make-list instance))
   (let [handling-costs (make-list instance)
         mean (mean handling-costs)
         sd (standard-deviation handling-costs)
-        item (first (:items instance))
-        w (:weight item)
-        v (:value item)]
-    (println "handing-costs" handling-costs)
-    (println "z-score" (/ (- mean (/ v w)) sd))
-    (map #(if (< 0 1.5) (- 1 %) %) choices)))
+        z-scores (map #(/ (Math/abs (- mean (/ (:value %) (:weight %)))) sd) (:items instance))]
+    (map (fn [p x] (if (< p 1.1) (- x 1) x)) z-scores choices)))
 
-(make-list (:instance (mutate-answer ra)))
+
+
+(map (fn [p x] (if (< p 0.5) (- x 1) x)) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
+(map #(if (> %1 0.5) (* 2 %2) %2) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
 
 
 
@@ -127,8 +187,12 @@
   (make-answer (:instance answer)
                (mutate-choices (:choices answer) (:instance answer))))
 
- (def ra (random-answer knapPI_11_20_1000_1))
- (mutate-answer ra)
+
+
+;; (def ra (random-answer knapPI_11_20_1000_1))
+;; (mutate-answer ra)
+
+
 
 (defn hill-climber
   [mutator scorer instance max-tries]
@@ -146,82 +210,12 @@
 ; ))
 
 ; (time (hill-climber mutate-answer score knapPI_16_200_1000_1 100000random-answer knapPI_11_20_1000_1))
- (mutate-answer ra)
+;;  (mutate-answer ra)
 ; ))
 
 ; (time (hill-climber mutate-answer penalized-score knapPI_16_200_1000_1 100000
 ; ))
 
 
-;;;;;;MATT START
-;;   [answer]
-;;     (let [item (first :items)
-;;           w (:weight item)
-;;           v (:value item)]
-;;       (/ v w)))
 
 
-(defn mean [coll]
-  (let [sum (apply + coll)
-        count (count coll)]
-    (if (pos? count)
-      (/ sum count)
-      0)))
-
-;; (mean [1 4 3])
-
-(defn standard-deviation [coll]
-  (let [avg (mean coll)
-        squares (for [x coll]
-                  (let [x-avg (- x avg)]
-                    (* x-avg x-avg)))
-        total (count coll)]
-    (-> (/ (apply + squares)
-           (- total 1))
-        (Math/sqrt))))
-
-;; (standard-deviation [4 5 2 9 5 7 4 5 4])
-
-;;;;;;END MATT
-
-;;;;;;TRAVIS START
-
-
-(:value (first (:items knapPI_16_200_1000_1)))
-(first knapPI_16_200_1000_1)
-
-;; (def enlist `(3))
-;; (cons 5 enlist)
-
-(def make-list (fn [instance]
-                 (if (empty? instance)
-                   '()
-                 (loop [remaining (count (:items instance))
-                        lists (:items instance)
-                        enlist nil]
-                   (if (= remaining 0)
-                     enlist
-                     (recur (dec remaining)
-                            (rest lists)
-                            (cons (float (/ (:value (first lists)) (:weight (first lists)))) enlist)))))))
-
-
-
-(mean (make-list knapPI_16_200_1000_1))
-(standard-deviation (make-list knapPI_16_200_1000_1))
-
-;; (def find-value (fn [thing]
-;;                   (/ (:value thing) (:weight thing))))
-
-(def avg-price (fn [instance]
-                 (loop [total 0
-                        remaining (count (:items instance))
-                        lists (:items instance)]
-                   (if (= remaining 0)
-                     (/ total (count (:items instance)))
-                     (recur (+ total (:value (first lists)))
-                            (dec remaining)
-                            (rest lists))))))
-
-(avg-price knapPI_16_200_1000_1)
-;;;;;;END TRAVIS

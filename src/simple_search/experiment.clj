@@ -37,7 +37,8 @@
              (:label (:problem result))
              (:max-evals result)
              (:run-number result)
-             (long (:score @(:answer result))))))
+             (long (:score @(:answer result)))
+             (:total-weight @(:answer result)))))
 
 
 (defn get-labelled-problem
