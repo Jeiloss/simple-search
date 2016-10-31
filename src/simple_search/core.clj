@@ -75,7 +75,7 @@
               v (:value item)]
           (if (> (+ weight w) capacity)
             (recur value weight (rest items))
-            (recur (+ value v)nswer
+            (recur (+ value v)
                    (+ weight w)
                    (rest items))))))))
 
@@ -95,18 +95,40 @@
 
 ; (random-search penalized-score knapPI_16_200_1000_1 10000)
 
+;; (defn mutate-choices
+;;   [choices]
+;;   (let [mutation-rate (/ 1 (count choices))]
+;;     (map #(if (< (rand) mutation-rate) (- 1 %) %) choices)))
+
+
+
+
+;;we want to prefer things that are CLOSER to the mean. Bollocks to the outliers!!!
 (defn mutate-choices
-  [choices]
-  (let [mutation-rate (/ 1 (count choices))]
-    (map #(if (< (rand) mutation-rate) (- 1 %) %) choices)))
+  ;;This needs to include more data!
+  [choices instance]
+  (println (make-list instance))
+  (let [handling-costs (make-list instance)
+        mean (mean handling-costs)
+        sd (standard-deviation handling-costs)
+        item (first (:items instance))
+        w (:weight item)
+        v (:value item)]
+    (println "handing-costs" handling-costs)
+    (println "z-score" (/ (- mean (/ v w)) sd))
+    (map #(if (< 0 1.5) (- 1 %) %) choices)))
+
+(make-list (:instance (mutate-answer ra)))
+
+
 
 (defn mutate-answer
   [answer]
   (make-answer (:instance answer)
-               (mutate-choices (:choices answer))))
+               (mutate-choices (:choices answer) (:instance answer))))
 
-; (def ra (random-answer knapPI_11_20_1000_1))
-; (mutate-answer ra)
+ (def ra (random-answer knapPI_11_20_1000_1))
+ (mutate-answer ra)
 
 (defn hill-climber
   [mutator scorer instance max-tries]
@@ -123,7 +145,8 @@
 ; (time (random-search score knapPI_16_200_1000_1 100000
 ; ))
 
-; (time (hill-climber mutate-answer score knapPI_16_200_1000_1 100000
+; (time (hill-climber mutate-answer score knapPI_16_200_1000_1 100000random-answer knapPI_11_20_1000_1))
+ (mutate-answer ra)
 ; ))
 
 ; (time (hill-climber mutate-answer penalized-score knapPI_16_200_1000_1 100000
@@ -171,6 +194,8 @@
 ;; (cons 5 enlist)
 
 (def make-list (fn [instance]
+                 (if (empty? instance)
+                   '()
                  (loop [remaining (count (:items instance))
                         lists (:items instance)
                         enlist nil]
@@ -178,7 +203,9 @@
                      enlist
                      (recur (dec remaining)
                             (rest lists)
-                            (cons (float (/ (:value (first lists)) (:weight (first lists)))) enlist))))))
+                            (cons (float (/ (:value (first lists)) (:weight (first lists)))) enlist)))))))
+
+
 
 (mean (make-list knapPI_16_200_1000_1))
 (standard-deviation (make-list knapPI_16_200_1000_1))
