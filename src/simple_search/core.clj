@@ -13,12 +13,14 @@
 
 (defrecord Answer [instance choices total-weight total-value])
 
+;;Finds the mean of a list of numbers.
 (defn mean [coll]
   (let [sum (apply + coll)
         count (count coll)]
     (if (pos? count)
       (/ sum count)
       0)))
+;;Finds the sd of a list of numbers.
 (defn standard-deviation [coll]
   (if (empty? coll)
     '()
@@ -30,6 +32,7 @@
     (-> (/ (apply + squares)
            (- total 1))
         (Math/sqrt)))))
+;;Creates a list of values from an [instance]
 (def make-value-list (fn [instance]
                  (if (empty? instance)
                    '()
@@ -41,6 +44,7 @@
                      (recur (dec remaining)
                             (rest lists)
                             (cons (:value (first lists)) enlist)))))))
+;;Creates a list of weights from an [instance]
 (def make-weight-list (fn [instance]
                  (if (empty? instance)
                    '()
@@ -52,27 +56,12 @@
                      (recur (dec remaining)
                             (rest lists)
                             (cons (:weight (first lists)) enlist)))))))
+
+;;TESTS mean / sd on 1 instance.
 (float (mean (make-value-list knapPI_16_20_1000_3)))
 (float (standard-deviation (make-value-list knapPI_16_20_1000_3)))
 (float (mean (make-weight-list knapPI_16_20_1000_3)))
 (float (standard-deviation (make-weight-list knapPI_16_20_1000_3)))
-
-;;  make-list works on this instance, but when called upon at the top level,
-;;  it throws an error)
-(standard-deviation (make-list knapPI_16_200_1000_1))
-
-(map #(:items %) knapPI_16_20_1000_3)
-(def avg-price (fn [instance]
-                 (loop [total 0
-                        remaining (count (:items instance))
-                        lists (:items instance)]
-                   (if (= remaining 0)
-                     (/ total (count (:items instance)))
-                     (recur (+ total (:value (first lists)))
-                            (dec remaining)
-                            (rest lists))))))
-
-(avg-price knapPI_16_200_1000_1)
 
 
 (defn included-items
@@ -117,6 +106,8 @@
     0
     (:total-value answer)))
 
+;;Instead this version, change it so that it still cares about value when overweight.
+;;e.g.: return (- 1000000 (:total-value answer))
 (defn penalized-score
   "Takes the total-weight of the given answer unless it's over capacity,
    in which case we return the negative of the total weight."
@@ -174,15 +165,16 @@
   (if (< (:total-weight answer) (:capacity (:instance answer)))
     ;;Underweight.
     (make-answer (:instance answer)
-               (mutate-choices (:choices answer) (:instance answer)))
+               (appreciate (:choices answer) (:instance answer)))
     ;;Overweight.
     (make-answer (:instance answer)
-               (mutate-choices (:choices answer) (:instance answer)))))
+               (depreciate (:choices answer) (:instance answer)))))
 
 ;;Underweight (add weight)
 (def appreciate (fn []))
 
-(def appreciate (fn []))
+;;Overweight (remove weight)
+(def depreciate (fn []))
 
 
 (defn hill-climber
@@ -196,17 +188,3 @@
                (:score current-best))
           (recur new-answer (inc num-tries))
           (recur current-best (inc num-tries)))))))
-
-; (time (random-search score knapPI_16_200_1000_1 100000
-; ))
-
-; (time (hill-climber mutate-answer score knapPI_16_200_1000_1 100000random-answer knapPI_11_20_1000_1))
-;;  (mutate-answer ra)
-; ))
-
-; (time (hill-climber mutate-answer penalized-score knapPI_16_200_1000_1 100000
-; ))
-
-
-
-
