@@ -58,11 +58,29 @@
                             (cons (:weight (first lists)) enlist)))))))
 
 ;;TESTS mean / sd on 1 instance.
-(float (mean (make-value-list knapPI_16_20_1000_3)))
-(float (standard-deviation (make-value-list knapPI_16_20_1000_3)))
-(float (mean (make-weight-list knapPI_16_20_1000_3)))
-(float (standard-deviation (make-weight-list knapPI_16_20_1000_3)))
+(def mv (float (mean (make-value-list knapPI_16_20_1000_3))))
+(def sv (float (standard-deviation (make-value-list knapPI_16_20_1000_3))))
+(def mw (float (mean (make-weight-list knapPI_16_20_1000_3))))
+(def sw (float (standard-deviation (make-weight-list knapPI_16_20_1000_3))))
 
+(def z-values (map #(/ (- mv %) sv) (make-value-list knapPI_16_20_1000_3)))
+(def z-weights (map #(/ (- mw %) sw) (make-weight-list knapPI_16_20_1000_3)))
+(def tru-z (map #(- %1 %2) z-values z-weights))
+(def z-values (fn [instance] (let [value-list (make-value-list instance)
+                                   weight-list (make-weight-list instance)
+                                   mov (float (mean value-list))
+                                   sov (float (standard-deviation value-list))
+                                   mow (float (mean weight-list))
+                                   sow (float (mean weight-list))]
+                               (map #(- (/ (- mov %1) sov) (/ (- mow %2 sow))) value-list weight-list))))
+(z-values knapPI_16_20_1000_3)
+
+(defn above-mean-start
+  [instance]
+  (let [half-step (z-values instance)
+        choices (map #(if (< 1 %) 1 0) half-step)]
+    (make-answer instance choices)))
+(above-mean-start knapPI_16_20_1000_3)
 
 (defn included-items
   "Takes a sequences of items and a sequence of choices and
@@ -79,10 +97,6 @@
     (->Answer instance choices
               (reduce + (map :weight included))
               (reduce + (map :value included)))))
-
-(defn weighted-answer
-  [instance]
-  #_"Activates all favorable choices.")
 
 (defn random-answer
   "Construct a random answer value for the given instance of the
@@ -160,6 +174,12 @@
 ;;   (make-answer (:instance answer)
 ;;                (mutate-choices (:choices answer) (:instance answer))))
 
+;;Underweight (add weight)
+(def appreciate (fn []))
+
+;;Overweight (remove weight)
+(def depreciate (fn []))
+
 (defn mutate-answer
   [answer]
   (if (< (:total-weight answer) (:capacity (:instance answer)))
@@ -170,11 +190,7 @@
     (make-answer (:instance answer)
                (depreciate (:choices answer) (:instance answer)))))
 
-;;Underweight (add weight)
-(def appreciate (fn []))
 
-;;Overweight (remove weight)
-(def depreciate (fn []))
 
 
 (defn hill-climber
