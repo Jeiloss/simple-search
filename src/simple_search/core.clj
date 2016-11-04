@@ -43,6 +43,9 @@
 ;; (def enlist `(3))
 ;; (cons 5 enlist)
 
+;;  make-list works on this instance, makes a value over weight. SO that able to avegare out the score.
+
+
 (def make-list (fn [instance]
                  (if (empty? instance)
                    '()
@@ -56,10 +59,11 @@
                             (cons (float (/ (:value (first lists)) (:weight (first lists)))) enlist)))))))
 
 
-;;  make-list works on this instance, but when called upon at the top level,
-;;  it throws an error
-(mean (make-list knapPI_16_200_1000_1))
-(standard-deviation (make-list knapPI_16_200_1000_1))
+
+;; (mean (make-list knapPI_16_200_1000_1))
+;; (standard-deviation (make-list knapPI_16_200_1000_1))
+
+
 
 (def avg-price (fn [instance]
                  (loop [total 0
@@ -72,6 +76,9 @@
                             (rest lists))))))
 
 (avg-price knapPI_16_200_1000_1)
+(apply max '(5 4 3 1))
+(apply max '(-8 -12 -4 -1))
+(apply max (map #(Math/abs %) '(18 19 12 -4 -5 -21)))
 
 
 (defn included-items
@@ -168,24 +175,31 @@
 
 (defn mutate-choices
   ;;This needs to include more data!
-  [choices instance]
-  (let [handling-costs (make-list instance)
+  [choices instance total-weight]
+  (let [mutation-rate (/ 1 (count choices))
+        handling-costs (make-list instance)
         mean (mean handling-costs)
         sd (standard-deviation handling-costs)
-        z-scores (map #(/ (Math/abs (- mean (/ (:value %) (:weight %)))) sd) (:items instance))]
-    (map (fn [p x] (if (< p 1.1) (- x 1) x)) z-scores choices)))
+        z-scores (map #(/ (Math/abs (- mean (/ (:value %) (:weight %)))) sd) (:items instance))
+        biggestnumber (apply (map #(Math/abs %) z-scores))]
+    (if (< total-weight (:capacity instance))
+      (map (fn [p x] (if (< (/ p biggestnumber) mutation-rate) (- x 1) x)) z-scores choices)
+      (let [mutation-rate (/ 2 (count choices))
+            ]
+      (map (fn [p x] (if (> (/ p biggestnumber) mutation-rate) (- x 1) x)) z-scores choices)))))
 
 
 
-(map (fn [p x] (if (< p 0.5) (- x 1) x)) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
-(map #(if (> %1 0.5) (* 2 %2) %2) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
+
+;; (map (fn [p x] (if (< p 0.5) (- x 1) x)) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
+;; (map #(if (> %1 0.5) (* 2 %2) %2) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
 
 
 
 (defn mutate-answer
   [answer]
   (make-answer (:instance answer)
-               (mutate-choices (:choices answer) (:instance answer))))
+               (mutate-choices (:choices answer) (:instance answer) (:total-weight answer))))
 
 
 
