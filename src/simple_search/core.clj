@@ -14,6 +14,7 @@
 (defrecord Answer [instance choices total-weight total-value])
 
 (defn mean [coll]
+  "Makes the mean of a list"
   (let [sum (apply + coll)
         count (count coll)]
     (if (pos? count)
@@ -23,6 +24,7 @@
 ;; (mean [1 4 3])
 
 (defn standard-deviation [coll]
+  "Standard deviation of a list"
   (if (empty? coll)
     '()
   (let [avg (mean coll)
@@ -37,15 +39,7 @@
 ;; (standard-deviation [4 5 2 9 5 7 4 5 4])
 
 
-(:value (first (:items knapPI_16_200_1000_1)))
-(first knapPI_16_200_1000_1)
-
-;; (def enlist `(3))
-;; (cons 5 enlist)
-
 ;;  make-list works on this instance, makes a value over weight. SO that able to avegare out the score.
-
-
 (def make-list (fn [instance]
                  (if (empty? instance)
                    '()
@@ -75,10 +69,7 @@
                             (dec remaining)
                             (rest lists))))))
 
-(avg-price knapPI_16_200_1000_1)
-(apply max '(5 4 3 1))
-(apply max '(-8 -12 -4 -1))
-(apply max (map #(Math/abs %) '(18 19 12 -4 -5 -21)))
+
 
 
 (defn included-items
@@ -107,8 +98,7 @@
 
 ;; (random-answer knapPI_13_20_1000_7)
 
-;;; It might be cool to write a function that
-;;; generates weighted proportions of 0's and 1's.
+
 
 (defn score
   "Takes the :total-weight of the given answer unless it's over capacity,
@@ -127,6 +117,7 @@
          (:capacity (:instance answer)))
     (- (:total-weight answer))
     (:total-value answer)))
+
 
 (defn lexi-score
   [answer]
@@ -183,7 +174,6 @@
         sd (standard-deviation handling-costs)
         z-scores (map #(/ (Math/abs (- mean (/ (:value %) (:weight %)))) sd) (:items instance))
         biggestnumber (apply max (map #(Math/abs %) z-scores))]
-;;         biggestnumber 5]
     (if (< total-weight (:capacity instance))
       (map (fn [p x] (if (< (/ p biggestnumber) mutation-rate) (- x 1) x)) z-scores choices)
       (map (fn [p x] (if (> (/ p biggestnumber) mutation-rate-big) (- x 1) x)) z-scores choices))))
