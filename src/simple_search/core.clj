@@ -177,19 +177,21 @@
   ;;This needs to include more data!
   [choices instance total-weight]
   (let [mutation-rate (/ 1 (count choices))
+        mutation-rate-big (/ 2 (count choices))
         handling-costs (make-list instance)
         mean (mean handling-costs)
         sd (standard-deviation handling-costs)
         z-scores (map #(/ (Math/abs (- mean (/ (:value %) (:weight %)))) sd) (:items instance))
-        biggestnumber (apply (map #(Math/abs %) z-scores))]
+        biggestnumber (apply max (map #(Math/abs %) z-scores))]
+;;         biggestnumber 5]
     (if (< total-weight (:capacity instance))
       (map (fn [p x] (if (< (/ p biggestnumber) mutation-rate) (- x 1) x)) z-scores choices)
-      (let [mutation-rate (/ 2 (count choices))
-            ]
-      (map (fn [p x] (if (> (/ p biggestnumber) mutation-rate) (- x 1) x)) z-scores choices)))))
+      (map (fn [p x] (if (> (/ p biggestnumber) mutation-rate-big) (- x 1) x)) z-scores choices))))
 
 
-
+;; (apply max (map #(Math/abs %) '(5 4 -6 -3)))
+;; (apply max (map #(Math/abs %) '(18 19 12 -4 -5 -21)))
+;; (+ 5 2)
 
 ;; (map (fn [p x] (if (< p 0.5) (- x 1) x)) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
 ;; (map #(if (> %1 0.5) (* 2 %2) %2) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
