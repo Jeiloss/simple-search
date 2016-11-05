@@ -13,75 +13,6 @@
 
 (defrecord Answer [instance choices total-weight total-value])
 
-;;Finds the mean of a list of numbers.
-(defn mean [coll]
-  (let [sum (apply + coll)
-        count (count coll)]
-    (if (pos? count)
-      (/ sum count)
-      0)))
-;;Finds the sd of a list of numbers.
-(defn standard-deviation [coll]
-  (if (empty? coll)
-    '()
-  (let [avg (mean coll)
-        squares (for [x coll]
-                  (let [x-avg (- x avg)]
-                    (* x-avg x-avg)))
-        total (count coll)]
-    (-> (/ (apply + squares)
-           (- total 1))
-        (Math/sqrt)))))
-;;Creates a list of values from an [instance]
-(def make-value-list (fn [instance]
-                 (if (empty? instance)
-                   '()
-                 (loop [remaining (count (:items instance))
-                        lists (:items instance)
-                        enlist nil]
-                   (if (= remaining 0)
-                     enlist
-                     (recur (dec remaining)
-                            (rest lists)
-                            (cons (:value (first lists)) enlist)))))))
-;;Creates a list of weights from an [instance]
-(def make-weight-list (fn [instance]
-                 (if (empty? instance)
-                   '()
-                 (loop [remaining (count (:items instance))
-                        lists (:items instance)
-                        enlist nil]
-                   (if (= remaining 0)
-                     enlist
-                     (recur (dec remaining)
-                            (rest lists)
-                            (cons (:weight (first lists)) enlist)))))))
-
-;;TESTS mean / sd on 1 instance.
-(def mv (float (mean (make-value-list knapPI_16_20_1000_3))))
-(def sv (float (standard-deviation (make-value-list knapPI_16_20_1000_3))))
-(def mw (float (mean (make-weight-list knapPI_16_20_1000_3))))
-(def sw (float (standard-deviation (make-weight-list knapPI_16_20_1000_3))))
-
-(def z-values (map #(/ (- mv %) sv) (make-value-list knapPI_16_20_1000_3)))
-(def z-weights (map #(/ (- mw %) sw) (make-weight-list knapPI_16_20_1000_3)))
-(def tru-z (map #(- %1 %2) z-values z-weights))
-(def z-values (fn [instance] (let [value-list (make-value-list instance)
-                                   weight-list (make-weight-list instance)
-                                   mov (float (mean value-list))
-                                   sov (float (standard-deviation value-list))
-                                   mow (float (mean weight-list))
-                                   sow (float (mean weight-list))]
-                               (map #(- (/ (- mov %1) sov) (/ (- mow %2 sow))) value-list weight-list))))
-(z-values knapPI_16_20_1000_3)
-
-(defn above-mean-start
-  [instance]
-  (let [half-step (z-values instance)
-        choices (map #(if (< 1 %) 1 0) half-step)]
-    (make-answer instance choices)))
-(above-mean-start knapPI_16_20_1000_3)
-
 (defn included-items
   "Takes a sequences of items and a sequence of choices and
   returns the subsequence of items corresponding to the 1's
@@ -99,12 +30,27 @@
               (reduce + (map :value included)))))
 
 (defn random-answer
-  "Construct a random answer value for the given instance of the
+  "Construct a random answer for the given instance of the
   knapsack problem."
   [instance]
   (let [choices (repeatedly (count (:items instance))
                             #(rand-int 2))]
     (make-answer instance choices)))
+
+(def no-choices (fn [instance]
+                  (loop [choices '()
+                         left (count (:items instance))]
+                    (if (= left 0)
+                      choices
+                      (recur (cons 0 choices) (dec left))))))
+
+(defn zero-answer
+  "Construct a random answer value for the given instance of the
+  knapsack problem."
+  [instance]
+  (let [choices (no-choices instance)]
+    (make-answer instance choices)))
+
 
 ;; (random-answer knapPI_13_20_1000_7)
 
@@ -112,7 +58,7 @@
 ;;; generates weighted proportions of 0's and 1's.
 
 (defn score
-  "Takes the :total-weight of the given answer unless it's over capacity,
+  "Takes the total-weight of the given answer unless it's over capacity,
    in which case we return 0."
   [answer]
   (if (> (:total-weight answer)
@@ -131,6 +77,25 @@
     (- (:total-weight answer))
     (:total-value answer)))
 
+(defn lexi-score
+  [answer]
+  (let [shuffled-items (shuffle (included-items (:items (:instance answer))
+                                                (:choices answer)))
+        capacity (:capacity (:instance answer))]
+    (loop [value 0
+           weight 0
+           items shuffled-items]
+      (if (empty? items)
+        value
+        (let [item (first items)
+              w (:weight item)
+              v (:value item)]
+          (if (> (+ weight w) capacity)
+            (recur value weight (rest items))
+            (recur (+ value v)
+                   (+ weight w)
+                   (rest items))))))))
+
 
 (defn add-score
   "Computes the score of an answer and inserts a new :score field
@@ -142,56 +107,33 @@
   [scorer instance max-tries]
   (apply max-key :score
          (map (partial add-score scorer)
-               (repeatedly max-tries #(random-answer instance)))))
+              (repeatedly max-tries #(random-answer instance)))))
 
 ; (random-search penalized-score knapPI_16_200_1000_1 10000)
 
-;; (defn mutate-choices
-;;   [choices]
-;;   (let [mutation-rate (/ 1 (count choices))]
-;;     (map #(if (< (rand) mutation-rate) (- 1 %) %) choices)))
-
-
-
-;;we want to prefer things that are CLOSER to the mean. Bollocks to the outliers!!!
-;; The new mutate-choices takes 2 parameter in order to check the z-score and flip a choice.
-
-;; (defn mutate-choices
-;;   ;;This needs to include more data!
-;;   [choices instance]
-;;   (let [handling-costs (make-list instance)
-;;         mean (mean handling-costs)
-;;         sd (standard-deviation handling-costs)
-;;         z-scores (map #(/ (Math/abs (- mean (/ (:value %) (:weight %)))) sd) (:items instance))]
-;;     (map (fn [p x] (if (< p 1.1) (- x 1) x)) z-scores choices)))
-(map (fn [p x] (if (< p 0.5) (- x 1) x)) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
-(map #(if (> %1 0.5) (* 2 %2) %2) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
-
-
-
-;; (defn mutate-answer
-;;   [answer]
-;;   (make-answer (:instance answer)
-;;                (mutate-choices (:choices answer) (:instance answer))))
-
-;;Underweight (add weight)
-(def appreciate (fn []))
-
-;;Overweight (remove weight)
-(def depreciate (fn []))
+(defn mutate-choices
+  [choices]
+  (let [mutation-rate (/ 1 (count choices))]
+    (map #(if (< (rand) mutation-rate) (- 1 %) %) choices)))
 
 (defn mutate-answer
   [answer]
-  (if (< (:total-weight answer) (:capacity (:instance answer)))
-    ;;Underweight.
-    (make-answer (:instance answer)
-               (appreciate (:choices answer) (:instance answer)))
-    ;;Overweight.
-    (make-answer (:instance answer)
-               (depreciate (:choices answer) (:instance answer)))))
+  (make-answer (:instance answer)
+               (mutate-choices (:choices answer))))
 
 
 
+(defn my-zero-start
+  [mutator scorer instance max-tries]
+  (loop [current-best (add-score scorer (zero-answer instance))
+         num-tries 1]
+    (let [new-answer (add-score scorer (mutator current-best))]
+      (if (>= num-tries max-tries)
+        current-best
+        (if (> (:score new-answer)
+               (:score current-best))
+          (recur new-answer (inc num-tries))
+          (recur current-best (inc num-tries)))))))
 
 (defn hill-climber
   [mutator scorer instance max-tries]
