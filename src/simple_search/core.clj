@@ -197,12 +197,6 @@
                (< p -0.65) (if (< (rand) mutatoin-rate-small) (- 1 x) x)
                )) z-scores choices)))
 
-
-;;              (if (and (>= (Math/abs p) 0) (< (Math/abs p) 0.65))
-;;                        (if (< (rand) mutation-rate-big) (- 1 x) x)
-;;                          (if (< (rand) mutatoin-rate-small) (- 1 x) x))) z-scores choices)))
-
-
 ;; (apply max (map #(Math/abs %) '(18 19 12 -4 -5 -21)))
 ;; (+ 5 2)
 
