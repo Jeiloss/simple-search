@@ -166,7 +166,7 @@
          (map (partial add-score scorer)
                (repeatedly max-tries #(random-answer instance)))))
 
-; (random-search penalized-score knapPI_16_200_1000_1 10000)
+ ; (random-search penalized-score knapPI_16_200_1000_1 10000)
 
 ;; (defn mutate-choices
 ;;   [choices]
@@ -192,9 +192,9 @@
         ]
       (map (fn [p x]
              (cond
-               (and (>= (Math/abs p) 0) (<= (Math/abs p) 0.65)) (if (< (rand) mutation-rate-big) (- 1 x) x)
-               (> p 0.65) (if (< (rand) (/ 1 5)) (- 1 x) x)
-               (< p -0.65) (if (< (rand) mutatoin-rate-small) (- 1 x) x)
+               (and (>= (Math/abs p) 0) (<= (Math/abs p) 0.6)) (if (< (rand) mutation-rate-big) (- 1 x) x)
+               (> p 0.6) (if (< (rand) (/ 1 15)) (- 1 x) x)
+               (< p -0.6) (if (< (rand) mutatoin-rate-small) (- 1 x) x)
                )) z-scores choices)))
 
 ;; (apply max (map #(Math/abs %) '(18 19 12 -4 -5 -21)))
