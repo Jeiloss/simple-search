@@ -13,6 +13,13 @@
 
 (defrecord Answer [instance choices total-weight total-value])
 
+(def no-choices (fn [instance]
+                  (loop [choices '()
+                         left (count (:items instance))]
+                    (if (= left 0)
+                      choices
+                      (recur (cons 0 choices) (dec left))))))
+
 (defn mean [coll]
   "Makes the mean of a list"
   (let [sum (apply + coll)
@@ -98,7 +105,14 @@
 
 ;; (random-answer knapPI_13_20_1000_7)
 
+(defn zero-answer
+  "Construct a random answer value for the given instance of the
+  knapsack problem."
+  [instance]
+  (let [choices (no-choices instance)]
+    (make-answer instance choices)))
 
+;; (zero-answer knapPI_11_20_1000_8)
 
 (defn score
   "Takes the :total-weight of the given answer unless it's over capacity,
@@ -167,25 +181,33 @@
 (defn mutate-choices
   ;;This needs to include more data!
   [choices instance total-weight]
-  (let [mutation-rate (/ 1 (count choices))
-        mutation-rate-big (/ 2 (count choices))
-        handling-costs (make-list instance)
+  (let [handling-costs (make-list instance)
         mean (mean handling-costs)
         sd (standard-deviation handling-costs)
-        z-scores (map #(/ (Math/abs (- mean (/ (:value %) (:weight %)))) sd) (:items instance))
-        biggestnumber (apply max (map #(Math/abs %) z-scores))]
-    (if (< total-weight (:capacity instance))
-      (map (fn [p x] (if (< (/ p biggestnumber) mutation-rate) (- x 1) x)) z-scores choices)
-      (map (fn [p x] (if (> (/ p biggestnumber) mutation-rate-big) (- x 1) x)) z-scores choices))))
+        z-scores (map #(/ (- mean (/ (:value %) (:weight %))) sd) (:items instance))
+        bignum (apply max (map #(Math/abs %) z-scores))
+        smallnum (apply min  z-scores)
+        mutation-rate-big (/ 1 (count choices))
+        mutatoin-rate-small (/ 1 (* 2 (count choices)))
+        ]
+      (map (fn [p x]
+             (cond
+               (and (>= (Math/abs p) 0) (<= (Math/abs p) 0.65)) (if (< (rand) mutation-rate-big) (- 1 x) x)
+               (> p 0.65) (if (< (rand) (/ 1 5)) (- 1 x) x)
+               (< p -0.65) (if (< (rand) mutatoin-rate-small) (- 1 x) x)
+               )) z-scores choices)))
 
 
-;; (apply max (map #(Math/abs %) '(5 4 -6 -3)))
+;;              (if (and (>= (Math/abs p) 0) (< (Math/abs p) 0.65))
+;;                        (if (< (rand) mutation-rate-big) (- 1 x) x)
+;;                          (if (< (rand) mutatoin-rate-small) (- 1 x) x))) z-scores choices)))
+
+
 ;; (apply max (map #(Math/abs %) '(18 19 12 -4 -5 -21)))
 ;; (+ 5 2)
 
 ;; (map (fn [p x] (if (< p 0.5) (- x 1) x)) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
 ;; (map #(if (> %1 0.5) (* 2 %2) %2) [0.2 0.4 0.7 0.3 0.8] [5 8 9 6 3])
-
 
 
 (defn mutate-answer
@@ -198,6 +220,17 @@
 ;; (def ra (random-answer knapPI_11_20_1000_1))
 ;; (mutate-answer ra)
 
+(defn my-zero-start
+  [mutator scorer instance max-tries]
+  (loop [current-best (add-score scorer (zero-answer instance))
+         num-tries 1]
+    (let [new-answer (add-score scorer (mutator current-best))]
+      (if (>= num-tries max-tries)
+        current-best
+        (if (> (:score new-answer)
+               (:score current-best))
+          (recur new-answer (inc num-tries))
+          (recur current-best (inc num-tries)))))))
 
 
 (defn hill-climber
